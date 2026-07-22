@@ -79,10 +79,10 @@ jobs:
           # Build kernel image and modules
           make -j$(nproc) bzImage modules
           
-          # Package kernel
+          # Prepare dist folder
           mkdir -p ../dist/boot
           
-          # 1. Copy kernel image, system.map and .config
+          # 1. Copy vmlinuz
           cp arch/x86/boot/bzImage ../dist/boot/vmlinuz-${{ env.LATEST_VER }}-linuxci
           cp System.map ../dist/boot/System.map-${{ env.LATEST_VER }}-linuxci
           cp .config ../dist/boot/config-${{ env.LATEST_VER }}-linuxci
@@ -90,18 +90,23 @@ jobs:
           # 2. Install modules
           make modules_install INSTALL_MOD_PATH=../dist
           
-          # 3. Compress modules
-          cd ../dist
-          tar -cJf ../modules-${{ env.LATEST_VER }}-linuxci.tar.xz lib/modules
+          # 3. Collect all artifacts to ROOT_DIR
+          ROOT_DIR=$GITHUB_WORKSPACE
           
-          # 4. Compress bzImage into .tar.xz to reduce file size (avoid 2GB limit)
-          cd ..
-          tar -cJf bzImage-${{ env.LATEST_VER }}.tar.xz -C dist/boot vmlinuz-${{ env.LATEST_VER }}-linuxci
+          cp arch/x86/boot/bzImage $ROOT_DIR/bzImage-${{ env.LATEST_VER }}
+          
+          cd ../dist
+          tar -cJf $ROOT_DIR/modules-${{ env.LATEST_VER }}-linuxci.tar.xz lib/modules
+          
+          # Check again if the files are really in ROOT
+          cd $ROOT_DIR
+          ls -lh bzImage-${{ env.LATEST_VER }} modules-${{ env.LATEST_VER }}-linuxci.tar.xz
 
       - name: Generate Checksums
         if: env.SKIP == 'false'
         run: |
-          sha256sum bzImage-${{ env.LATEST_VER }}.tar.xz modules-${{ env.LATEST_VER }}-linuxci.tar.xz > SHA256SUMS
+          sha256sum bzImage-${{ env.LATEST_VER }} modules-${{ env.LATEST_VER }}-linuxci.tar.xz > SHA256SUMS
+          cat SHA256SUMS
 
       - name: Create GitHub Release
         if: env.SKIP == 'false'
@@ -109,11 +114,12 @@ jobs:
         with:
           tag_name: v${{ env.LATEST_VER }}
           name: Linux Kernel ${{ env.LATEST_VER }} (Generic Raw Binaries)
+          fail_on_unmatched_files: true
           body: |
             Raw Mainline Kernel Build v${{ env.LATEST_VER }} (Arch Config Base).
             
             **Included Files:**
-            - `bzImage-${{ env.LATEST_VER }}.tar.xz`: Kernel Image (extract to `/boot/vmlinuz-...`)
+            - `bzImage-${{ env.LATEST_VER }}`: Kernel Image (rename/copy to `/boot/vmlinuz-...`)
             - `modules-${{ env.LATEST_VER }}-linuxci.tar.xz`: Kernel Modules (extract to `/`)
             
             **SHA256 Checksums:**
@@ -121,7 +127,7 @@ jobs:
             $(cat SHA256SUMS)
             ```
           files: |
-            bzImage-${{ env.LATEST_VER }}.tar.xz
+            bzImage-${{ env.LATEST_VER }}
             modules-${{ env.LATEST_VER }}-linuxci.tar.xz
             SHA256SUMS
         env:
