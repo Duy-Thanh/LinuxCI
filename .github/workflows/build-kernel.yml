@@ -57,6 +57,9 @@ jobs:
           
           # Pull .config
           curl -sSL https://gitlab.archlinux.org/archlinux/packaging/packages/linux/-/raw/main/config.x86_64\?ref_type\=heads\&inline\=false -o .config
+
+          # Show contents file
+          cat .config
           
           # Disable Debug and Certs to build fast and without crash
           scripts/config --disable DEBUG_INFO
