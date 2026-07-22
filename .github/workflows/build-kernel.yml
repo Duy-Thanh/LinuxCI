@@ -3,8 +3,8 @@ name: LinuxCI - Auto Build Kernel
 on:
   push:
   schedule:
-    - cron: '0 0 * * *' # Chạy tự động lúc 00:00 UTC mỗi ngày
-  workflow_dispatch:     # Cho phép bấm nút trigger thủ công bất cứ lúc nào
+    - cron: '0 0 * * *'     # Auto-run at 00:00 UTC every day
+  workflow_dispatch:        # Auto-run by clicking the trigger button
 
 jobs:
   check-and-build:
@@ -27,7 +27,7 @@ jobs:
           echo "LATEST_VER=$LATEST" >> $GITHUB_ENV
           echo "Latest stable kernel on kernel.org: $LATEST"
           
-          # Check xem tag đã build trên Repo chưa
+          # Check if the tag has been built on Repo yet
           EXISTS=$(git ls-remote --tags origin "refs/tags/v$LATEST" | wc -l)
           if [ "$EXISTS" -gt "0" ]; then
             echo "Version v$LATEST already built. Exiting..."
@@ -55,17 +55,17 @@ jobs:
         run: |
           cd linux-${{ env.LATEST_VER }}
           
-          # Pull .config xịn của Arch Linux
+          # Pull .config
           curl -sSL https://gitlab.archlinux.org/archlinux/packaging/packages/linux/-/raw/main/config.x86_64\?ref_type\=heads\&inline\=false -o .config
           
-          # Tắt Debug & Certs để build nhanh + không bị crash ngang
+          # Disable Debug and Certs to build fast and without crash
           scripts/config --disable DEBUG_INFO
           scripts/config --disable DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT
           scripts/config --disable DEBUG_INFO_BTF
           scripts/config --set-str SYSTEM_TRUSTED_KEYS ""
           scripts/config --set-str SYSTEM_REVOCATION_KEYS ""
           
-          # Tự động điền default cho các config mới
+          # Auto fill default configs
           make olddefconfig
 
       - name: Compile Kernel & Package Raw Binaries
@@ -73,21 +73,21 @@ jobs:
         run: |
           cd linux-${{ env.LATEST_VER }}
           
-          # Build vmlinuz và modules bằng toàn bộ CPU cores
+          # Build kernel image and modules
           make -j$(nproc) bzImage modules
           
-          # Gom hàng vào thư mục dist để đóng gói
+          # Package kernel
           mkdir -p ../dist/boot
           
-          # 1. Copy bzImage, System.map và .config
+          # 1. Copy kernel image, system.map and .config
           cp arch/x86/boot/bzImage ../dist/boot/vmlinuz-${{ env.LATEST_VER }}-linuxci
           cp System.map ../dist/boot/System.map-${{ env.LATEST_VER }}-linuxci
           cp .config ../dist/boot/config-${{ env.LATEST_VER }}-linuxci
           
-          # 2. Install modules vào thư mục tạm rồi nén lại
+          # 2. Install modules
           make modules_install INSTALL_MOD_PATH=../dist
           
-          # 3. Nén modules bằng tar.xz (nén cực sâu, xài xz)
+          # 3. Compress modules
           cd ../dist
           tar -cJf ../modules-${{ env.LATEST_VER }}-linuxci.tar.xz lib/modules
           
