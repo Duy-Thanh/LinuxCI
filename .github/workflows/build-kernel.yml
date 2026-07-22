@@ -4,7 +4,7 @@ on:
   push:
   schedule:
     - cron: '0 0 * * *'     # Auto-run at 00:00 UTC every day
-  workflow_dispatch:        # Auto-run by clicking the trigger button
+  workflow_dispatch:
 
 jobs:
   check-and-build:
