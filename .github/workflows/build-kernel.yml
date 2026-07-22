@@ -41,7 +41,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libncurses-dev bison flex \
-            libssl-dev libelf-dev bc ccache dwarves kmod cpio rsync
+            libssl-dev libelf-dev bc ccache dwarves kmod cpio rsync xz-utils
 
       - name: Download & Extract Kernel Source
         if: env.SKIP == 'false'
@@ -60,8 +60,8 @@ jobs:
 
           # Show contents file
           cat .config
-          
-          # Disable Debug and Certs to build fast and without crash
+
+          # Disable Debug and Certs to build fast and reduce binary size
           scripts/config --disable DEBUG_INFO
           scripts/config --disable DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT
           scripts/config --disable DEBUG_INFO_BTF
@@ -94,18 +94,18 @@ jobs:
           cd ../dist
           tar -cJf ../modules-${{ env.LATEST_VER }}-linuxci.tar.xz lib/modules
           
-          # 4. Đổi tên bzImage ra ngoài root để upload
+          # 4. Compress bzImage into .tar.xz to reduce file size (avoid 2GB limit)
           cd ..
-          cp dist/boot/vmlinuz-${{ env.LATEST_VER }}-linuxci ./bzImage-${{ env.LATEST_VER }}
+          tar -cJf bzImage-${{ env.LATEST_VER }}.tar.xz -C dist/boot vmlinuz-${{ env.LATEST_VER }}-linuxci
 
       - name: Generate Checksums
         if: env.SKIP == 'false'
         run: |
-          sha256sum bzImage-${{ env.LATEST_VER }} modules-${{ env.LATEST_VER }}-linuxci.tar.xz > SHA256SUMS
+          sha256sum bzImage-${{ env.LATEST_VER }}.tar.xz modules-${{ env.LATEST_VER }}-linuxci.tar.xz > SHA256SUMS
 
       - name: Create GitHub Release
         if: env.SKIP == 'false'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.LATEST_VER }}
           name: Linux Kernel ${{ env.LATEST_VER }} (Generic Raw Binaries)
@@ -113,7 +113,7 @@ jobs:
             Raw Mainline Kernel Build v${{ env.LATEST_VER }} (Arch Config Base).
             
             **Included Files:**
-            - `bzImage-${{ env.LATEST_VER }}`: Kernel Image (rename/copy to `/boot/vmlinuz-...`)
+            - `bzImage-${{ env.LATEST_VER }}.tar.xz`: Kernel Image (extract to `/boot/vmlinuz-...`)
             - `modules-${{ env.LATEST_VER }}-linuxci.tar.xz`: Kernel Modules (extract to `/`)
             
             **SHA256 Checksums:**
@@ -121,7 +121,7 @@ jobs:
             $(cat SHA256SUMS)
             ```
           files: |
-            bzImage-${{ env.LATEST_VER }}
+            bzImage-${{ env.LATEST_VER }}.tar.xz
             modules-${{ env.LATEST_VER }}-linuxci.tar.xz
             SHA256SUMS
         env:
