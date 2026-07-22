@@ -86,4 +86,4 @@ sha256sum -c SHA256SUMS
 ```
 
 ## License
-This project automation script is released under the MIT License. The compiled Linux Kernel binaries are distributed under the terms of the GNU General Public License v2.0 as set by the upstream Linux Kernel project.
+This project automation script is released under the MIT License. The compiled Linux Kernel binaries are distributed under the terms of the **GNU General Public License v2.0** as set by the upstream Linux Kernel project.
