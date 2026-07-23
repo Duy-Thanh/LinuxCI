@@ -43,6 +43,15 @@ jobs:
           sudo apt-get install -y build-essential libncurses-dev bison flex \
             libssl-dev libelf-dev bc ccache dwarves kmod cpio rsync xz-utils
 
+      - name: Setup ccache
+        if: env.SKIP == 'false'
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ env.LATEST_VER }}
+          restore-keys: |
+            ccache-${{ runner.os }}-
+
       - name: Download & Extract Kernel Source
         if: env.SKIP == 'false'
         run: |
@@ -75,9 +84,16 @@ jobs:
         if: env.SKIP == 'false'
         run: |
           cd linux-${{ env.LATEST_VER }}
+
+          export CCACHE_DIR=~/.ccache
+          export PATH="/usr/lib/ccache:$PATH"
+          ccache -M 5G
+          ccache -z
           
           # Build kernel image and modules
-          make -j$(nproc) bzImage modules
+          make -j$(nproc) CC="ccache gcc" bzImage modules
+
+          ccache -s
           
           # Prepare dist folder
           mkdir -p ../dist/boot
