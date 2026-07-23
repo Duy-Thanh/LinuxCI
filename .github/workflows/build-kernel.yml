@@ -88,7 +88,7 @@ jobs:
           cp .config ../dist/boot/config-${{ env.LATEST_VER }}-linuxci
           
           # 2. Install modules
-          make modules_install INSTALL_MOD_PATH=../dist
+          make modules_install INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH=../dist
           
           # 3. Collect all artifacts to ROOT_DIR
           ROOT_DIR=$GITHUB_WORKSPACE
@@ -96,7 +96,7 @@ jobs:
           cp arch/x86/boot/bzImage $ROOT_DIR/bzImage-${{ env.LATEST_VER }}
           
           cd ../dist
-          tar -cJf $ROOT_DIR/modules-${{ env.LATEST_VER }}-linuxci.tar.xz lib/modules
+          XZ_OPT="-9e -T0" tar -cJf $ROOT_DIR/modules-${{ env.LATEST_VER }}-linuxci.tar.xz lib/modules
           
           # Check again if the files are really in ROOT
           cd $ROOT_DIR
