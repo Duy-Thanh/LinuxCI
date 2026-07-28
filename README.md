@@ -1,6 +1,6 @@
 # LinuxCI
 
-> **Automated, untouched and Always Up-to-Date Linux Kernel Builds**
+> **Automated, untouched and always up-to-date Linux kernel builds**
 
 [![Build Kernel](https://github.com/Duy-Thanh/LinuxCI/actions/workflows/build-kernel.yml/badge.svg)](https://github.com/Duy-Thanh/LinuxCI/actions)
 [![GitHub Release](https://img.shields.io/github/v/release/Duy-Thanh/LinuxCI?color=blue&label=Latest%20Kernel)](https://github.com/Duy-Thanh/LinuxCI/releases)
